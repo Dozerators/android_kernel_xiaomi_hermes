@@ -1785,6 +1785,7 @@ retry:
 		if (err)
 			goto err_drop_inode;
 		mark_inode_dirty(inode);
+		d_tmpfile(dentry, inode);
 		unlock_new_inode(inode);
 	}
 	ext3_journal_stop(handle);
@@ -2339,7 +2340,7 @@ static int ext3_link (struct dentry * old_dentry,
 
 retry:
 	handle = ext3_journal_start(dir, EXT3_DATA_TRANS_BLOCKS(dir->i_sb) +
-					EXT3_INDEX_EXTRA_TRANS_BLOCKS);
+					EXT3_INDEX_EXTRA_TRANS_BLOCKS + 1);
 	if (IS_ERR(handle))
 		return PTR_ERR(handle);
 
@@ -2353,6 +2354,11 @@ retry:
 	err = ext3_add_entry(handle, dentry, inode);
 	if (!err) {
 		ext3_mark_inode_dirty(handle, inode);
+		/* this can happen only for tmpfile being
+		 * linked the first time
+		 */
+		if (inode->i_nlink == 1)
+			ext3_orphan_del(handle, inode);
 		d_instantiate(dentry, inode);
 	} else {
 		drop_nlink(inode);
@@ -2555,6 +2561,7 @@ const struct inode_operations ext3_dir_inode_operations = {
 	.mkdir		= ext3_mkdir,
 	.rmdir		= ext3_rmdir,
 	.mknod		= ext3_mknod,
+	.tmpfile	= ext3_tmpfile,
 	.rename		= ext3_rename,
 	.setattr	= ext3_setattr,
 #ifdef CONFIG_EXT3_FS_XATTR
