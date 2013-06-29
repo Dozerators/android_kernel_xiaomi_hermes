@@ -2337,7 +2337,7 @@ err_drop_inode:
 	return err;
 }
 
-struct ext4_dir_entry_2 *ext4_init_dot(struct inode *inode,
+struct ext4_dir_entry_2 *ext4_init_dot(struct inode *inode,t
 			  struct ext4_dir_entry_2 *de,
 			  int blocksize, int csum_size,
 			  unsigned int parent_ino, int dotdot_real_len)
@@ -2949,7 +2949,7 @@ static int ext4_link(struct dentry *old_dentry,
 retry:
 	handle = ext4_journal_start(dir, EXT4_HT_DIR,
 		(EXT4_DATA_TRANS_BLOCKS(dir->i_sb) +
-		 EXT4_INDEX_EXTRA_TRANS_BLOCKS));
+		 EXT4_INDEX_EXTRA_TRANS_BLOCKS) + 1);
 	if (IS_ERR(handle))
 		return PTR_ERR(handle);
 
@@ -2963,6 +2963,11 @@ retry:
 	err = ext4_add_entry(handle, dentry, inode);
 	if (!err) {
 		ext4_mark_inode_dirty(handle, inode);
+		/* this can happen only for tmpfile being
+		 * linked the first time
+		 */
+		if (inode->i_nlink == 1)
+			ext4_orphan_del(handle, inode);
 		d_instantiate(dentry, inode);
 	} else {
 		drop_nlink(inode);
@@ -3215,6 +3220,7 @@ const struct inode_operations ext4_dir_inode_operations = {
 	.mkdir		= ext4_mkdir,
 	.rmdir		= ext4_rmdir,
 	.mknod		= ext4_mknod,
+	.tmpfile	= ext4_tmpfile,
 	.rename		= ext4_rename,
 	.setattr	= ext4_setattr,
 	.setxattr	= generic_setxattr,
