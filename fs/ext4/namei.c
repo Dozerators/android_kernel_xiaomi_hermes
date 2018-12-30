@@ -2337,7 +2337,7 @@ err_drop_inode:
 	return err;
 }
 
-struct ext4_dir_entry_2 *ext4_init_dot(struct inode *inode,
+struct ext4_dir_entry_2 *ext4_init_dot_dotdot(struct inode *inode,
 			  struct ext4_dir_entry_2 *de,
 			  int blocksize, int csum_size,
 			  unsigned int parent_ino, int dotdot_real_len)
